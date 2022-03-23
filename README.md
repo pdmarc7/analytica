@@ -1,2 +1,2 @@
-#Analytica - MySQL analytics engine; 
-# analytica
+#Analytica
+- MySQL analytics engine; 
