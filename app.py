@@ -1,10 +1,13 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, jsonify, request
+from http import HTTPStatus
 import pymysql.cursors
+
+
 
 app = Flask(__name__)
 
-@app.route("/")
-def home():
+
+def get_connection():
     connection = pymysql.connect(
             host='localhost',
             user='root',
@@ -13,13 +16,31 @@ def home():
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor
         )
+    return connection
 
-    with connection.cursor() as cursor:
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route("/tables")
+def tables():
+    with get_connection().cursor() as cursor:
         # Read a single record
         sql = "show tables;"
         cursor.execute(sql)
         
         response = cursor.fetchall()
-        tables = [res['Tables_in_laravel'] for res in response]
+    return jsonify([res['Tables_in_laravel'] for res in response]), HTTPStatus.OK
 
-    return render_template('index.html', tables=tables)
+@app.route("/columns", methods=['POST', 'GET'])
+def columns():
+    table = request.form['table_name']
+    with get_connection().cursor() as cursor:
+        # Read a single record
+        sql = f"describe {table};"
+        cursor.execute(sql)
+        
+        response = cursor.fetchall()
+        cols = [res['Field'] for res in response]
+        cols.pop(0)
+    return jsonify(cols), HTTPStatus.OK
