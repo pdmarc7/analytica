@@ -1,6 +1,7 @@
 from flask import Flask, render_template, url_for, jsonify, request
 from http import HTTPStatus
 import pymysql.cursors
+import json
 
 
 
@@ -44,3 +45,13 @@ def columns():
         cols = [res['Field'] for res in response]
         cols.pop(0)
     return jsonify(cols), HTTPStatus.OK
+
+
+@app.route("/build_report", methods=['POST'])
+def build_report():
+    try:
+        data = list(request.form)[0]
+    except Exception as e:
+        print(e)
+    
+    return jsonify("Success"), HTTPStatus.OK

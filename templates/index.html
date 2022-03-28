@@ -92,7 +92,7 @@
                     </div>
                     
                     <div class="card-body">
-                        <form class="row g-3">
+                        <div class="row g-3">
                             <div class="col-12 mb-3">
                                 <button id="modal_button" type="button" class="btn">select database tables</button>
                             </div>
@@ -130,7 +130,7 @@
 
                             <div class="col-12">
                                 <label for="columns-select" class="form-label mb-1 select-label">Filter Value</label>
-                                <input type="text" class="form-control" id="column-alias" name="column-alias" placeholder="None">
+                                <input type="text" class="form-control" id="filter-value" name="filter-value" placeholder="None">
                             </div>
 
                             <div class="col-12">
@@ -154,7 +154,7 @@
                                 <hr>
                                 <button class="btn mb-0" id="build-report">Build Report</button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                     <!--<div class="card-footer bg-transparent">Footer</div>-->
                 </div>
@@ -180,6 +180,24 @@
       </div>
     </div>
 
+    <!-- Warning Modal -->
+    <div class="modal fade" id="warning-modal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="warning-modal-title">Warning</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center" id="warning-modal-body">
+            ...
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="../static/bootstrap.js"></script>
     <script src="../static/jquery.js"></script>
     <script type="text/javascript">
@@ -189,6 +207,8 @@
             // $ (first argument) will be internal reference to jQuery
             // Never rely on $ being a reference to jQuery in the global namespace
 
+            //-------------------------------------------------------//
+            let report = []
             //-------------------------------------------------------//
             //request function handles all ajax processes
             function request(payload){
@@ -268,7 +288,99 @@
                 var modal = new bootstrap.Modal($('#user-modal'), {keyboard: false});
                 modal.show();
             })
+            //-------------------------------------------------------//
+            $('#add-selector').on('click', function(){
+                var table = $('#tables-select').val();
+                var column = $('#columns-select').val();
+                var columnAlias = $('#column-alias').val();
 
+                if (table !== '' && column !== '' && columnAlias !== ''){
+                    if (report.find(query => query.table === table) == null){
+                        // continue from here
+                        
+                        var obj = {
+                            table: table, 
+                            selectors: [
+                                {
+                                    column: column, 
+                                    alias: columnAlias}, 
+                                ], 
+                            filters: []
+                        }
+                        
+                        report.push(obj)
+                        console.log(report)
+                    }else{
+                        var obj = report.find(query => query.table === table)
+
+                        obj.selectors.push(
+                            {
+                                column: column,
+                                alias: columnAlias
+                            })
+                    }
+
+                }else{
+                    //write modal to warn users of input error
+                    var modal = new bootstrap.Modal($('#warning-modal'), {keyboard: false});
+                    $("#warning-modal-body").empty().append(`<p class="lead fs-5">Kindly fill the relevant input fields</p>`);
+                    modal.show();
+                }
+
+            })
+            //-------------------------------------------------------//
+            $('#add-filter').on('click', function(){
+                var table = $('#tables-select').val();
+                var operation = $('#ops-select').val();
+                var filterTarget = $('#target-select').val();
+                var filterValue = $('#filter-value').val();
+
+                if (table !== '' && filterTarget !== '' && operation !== ''){
+                    if (report.find(query => query.table === table) == null){
+                    //write modal to warn users of input error
+                    var modal = new bootstrap.Modal($('#warning-modal'), {keyboard: false});
+                    $("#warning-modal-body").empty().append(`<p class="lead fs-5">Kindly create necessary selectors prior to adding filters</p>`);
+                    modal.show();
+                    }else{
+                        var obj = report.find(query => query.table === table)
+                        //still need to write code to cross check whether the 
+                        //the current filter already exists....
+                        obj.filters.push(
+                            {
+                                filterValue: filterValue,
+                                filterTarget: filterTarget,
+                                operation: operation
+                            })                        
+                    }
+
+                    console.log(report)
+
+                }else{
+                    //write modal to warn users of input errors
+                    var modal = new bootstrap.Modal($('#warning-modal'), {keyboard: false});
+                    $("#warning-modal-body").empty().append(`<p class="lead fs-5">Kindly fill the relevant input fields</p>`);
+                    modal.show();
+                }
+            })
+            //-------------------------------------------------------//
+            $('#build-report').on('click', function(){
+                if (report !== []){
+                    $.ajax({
+                        type: "Post",
+                        url: "http://localhost:5000/build_report",
+                        dataType: "json",
+                        data: JSON.stringify(report),
+                        success: function (data) {
+                            console.log(data)
+                            //current_problem_solved
+                        },
+                        error: function(jqXHR, textStatus){
+                            alert('Error occurred: ' + textStatus);
+                        }
+                    });
+                }
+            })
+            //-------------------------------------------------------//
 
         });
 
