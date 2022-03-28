@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, jsonify, request
 from http import HTTPStatus
 import pymysql.cursors
 import json
+import os
 
 
 
@@ -11,8 +12,8 @@ app = Flask(__name__)
 def get_connection():
     connection = pymysql.connect(
             host='localhost',
-            user='root',
-            password='coldkov-97',
+            user=os.environ['dbuser'],
+            password=os.environ['dbpassword'],
             database='laravel',
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor
