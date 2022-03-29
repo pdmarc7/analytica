@@ -22,6 +22,13 @@
             font-weight: 20px;
         }
 
+
+        table{
+            font-size: 13.3px;
+            font-weight: 20px;
+        }
+
+
         .modal-title{
             font-size: 15px;
         }
@@ -93,11 +100,12 @@
                     
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-12 mb-3">
+                            <div class="col-12 mt-4">
                                 <button id="modal_button" type="button" class="btn">select database tables</button>
                             </div>
-
+                            
                             <div class="col-12">
+                                <hr>
                                 <label for="tables-select" class="form-label mb-1 select-label">Table</label>
                                 <select class="form-select" id="tables-select">
                                   <option selected>select to edit tables</option>
@@ -137,12 +145,19 @@
                                 <label for="ops-select" class="form-label mb-1 select-label">Operation</label>
                                 <select class="form-select" id="ops-select">
                                   <option selected>None</option>
-                                  <option>Equal (=)</option>
-                                  <option>Greater Than (>)</option>
-                                  <option>Less Than (<)</option>
-                                  <option>Greater Than Or Equal To(>=)</option>
-                                  <option>Less Than Or Equal To(>=)</option>
-                                  <option>Count</option>
+                                  <option>EQUAL</option>
+                                  <option>GREATER THAN</option>
+                                  <option>LESS THAN</option>
+                                  <option>GREATER THAN OR EQUAL TO</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="logic-ops-select" class="form-label mb-1 select-label">Logical Operator</label>
+                                <select class="form-select" id="logic-ops-select">
+                                  <option selected>None</option>
+                                  <option>AND</option>
+                                  <option>OR</option>
                                 </select>
                             </div>
 
@@ -158,6 +173,9 @@
                     </div>
                     <!--<div class="card-footer bg-transparent">Footer</div>-->
                 </div>
+            </div>
+
+            <div class="col-md-8" id="report-container">
             </div>
         </div>
     </div>
@@ -334,6 +352,7 @@
                 var operation = $('#ops-select').val();
                 var filterTarget = $('#target-select').val();
                 var filterValue = $('#filter-value').val();
+                var logicalOperator = $('#logic-ops-select').val();
 
                 if (table !== '' && filterTarget !== '' && operation !== ''){
                     if (report.find(query => query.table === table) == null){
@@ -349,8 +368,11 @@
                             {
                                 filterValue: filterValue,
                                 filterTarget: filterTarget,
-                                operation: operation
-                            })                        
+                                operation: operation,
+                                logicalOperator: logicalOperator
+                            }
+                        )
+                  
                     }
 
                     console.log(report)
@@ -371,8 +393,8 @@
                         dataType: "json",
                         data: JSON.stringify(report),
                         success: function (data) {
-                            console.log(data)
-                            //current_problem_solved
+                            //console.log(data)
+                            $('#report-container').empty().append(data.html)
                         },
                         error: function(jqXHR, textStatus){
                             alert('Error occurred: ' + textStatus);

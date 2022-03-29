@@ -1,13 +1,12 @@
 from flask import Flask, render_template, url_for, jsonify, request
 from http import HTTPStatus
+from jinja2 import Template
+
 import pymysql.cursors
 import json
 import os
 
-
-
 app = Flask(__name__)
-
 
 def get_connection():
     connection = pymysql.connect(
@@ -19,6 +18,22 @@ def get_connection():
             cursorclass=pymysql.cursors.DictCursor
         )
     return connection
+
+
+def create_statement(obj):
+
+    template = Template('''SELECT{% for selector in obj['selectors'] %}{% if loop.last %}{% if selector['alias'] != '' %} {{ selector['column'] }} AS '{{ selector['alias'] }}'{% else %} {{ selector['column'] }}{% endif %}{% else %}{% if selector['alias'] != '' %} {{ selector['column'] }} AS '{{ selector['alias'] }}',{% else %} {{ selector['column'] }},{% endif %}{% endif %}{% endfor %} FROM {{ obj['table'] }} {% if obj['filters'] == [] %}{% else %}WHERE{% for filter in obj['filters'] %}{% if loop.first %}{% else %} {{ filter['logicalOperator'] }}{% endif %} {{ filter['filterTarget'] }} {{ operators[filter['operation']] }} {{ filter['filterValue'] }}{% endfor %};{% endif %}''')
+
+
+    operators = {
+        "EQUAL": '=',
+        "GREATER THAN": '>',
+        "LESS THAN": '<',
+        "GREATER THAN OR EQUAL TO": '>='
+    }
+
+    sql_statement = template.render(obj=obj, operators=operators)
+    return sql_statement
 
 @app.route('/')
 def home():
@@ -51,8 +66,42 @@ def columns():
 @app.route("/build_report", methods=['POST'])
 def build_report():
     try:
-        data = list(request.form)[0]
+
+        report =""
+        data = json.loads(list(request.form)[0])
+        
+        template = Template('''
+<table class="table">
+    <thead>
+        <tr>
+        {% for head in headers %}
+            <th class="col">{{ head | upper }}</th>
+        {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for head in headers %}
+                <td>{{ row[head] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+            ''')
+
+        for obj in data:
+            sql = create_statement(obj)
+            with get_connection().cursor() as cursor:
+                cursor.execute(sql)
+                rows = list(cursor.fetchall())
+                
+                if rows != []:
+                    headers = rows[0].keys()
+                    report = report + template.render(rows=rows, headers=headers)
     except Exception as e:
         print(e)
     
-    return jsonify("Success"), HTTPStatus.OK
+    return jsonify({'html': report}), HTTPStatus.OK
